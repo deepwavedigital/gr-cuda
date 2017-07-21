@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<block>
+  <name>CUDA Kernel</name>
+  <key>cuda_gpu_kernel</key>
+  <category>GPU Acceleration</category>
+  <import>import cuda</import>
+  <make>cuda.gpu_kernel($device_num, $vlen, $block_dims, $grid_dims)</make>
+
+  <param>
+    <name>GPU Device #</name>
+    <key>device_num</key>
+    <value>0</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Vector Length</name>
+    <key>vlen</key>
+    <value>0</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Block Dimensions</name>
+    <key>block_dims</key>
+    <value>Auto</value>
+    <type>string</type>
+  </param>
+  <param>
+    <name>Grid Dimensions</name>
+    <key>grid_dims</key>
+    <value>Auto</value>
+    <type>string</type>
+  </param>
+
+  <check>$vlen &gt; 0</check>
+
+  <sink>
+    <name>in</name>
+    <type>float</type>
+    <vlen>$vlen</vlen>
+  </sink>
+
+  <source>
+    <name>out</name>
+    <type>float</type>
+    <vlen>$vlen</vlen>
+  </source>
+</block>
