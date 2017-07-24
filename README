@@ -1,19 +1,8 @@
-title: gr-cuda
-brief: Library that integrates CUDA GPU processing with GNU Radio
-tags:
-  - GPU
-  - CUDA
-author:
-  - Peter Witkowski <pete@deepwavedigital.com>
-copyright_owner:
-  - Deepwave Digital, Inc. <support@deepwavedigital.com>
-dependencies:
-  - gnuradio (v3.7.9 or newer)
-  - pycuda (v2017.1 or newer)
----
-
 This OOT module contains experimental code on integration of GPU processing into
 GNU Radio by using the PyCUDA library to run CUDA code from within GNU Radio.
+
+For more information or to report bugs/issues please contact
+support@deepwavedigital.com.
 
 # Current Blocks
 -> gpu_kernel.py: This is a Python block that runs an arbitrary CUDA kernel from
@@ -29,4 +18,3 @@ GNU Radio by using the PyCUDA library to run CUDA code from within GNU Radio.
   -> cmake ../
   -> make
   -> sudo make install
-
