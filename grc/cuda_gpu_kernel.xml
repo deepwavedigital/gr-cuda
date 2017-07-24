@@ -4,7 +4,7 @@
   <key>cuda_gpu_kernel</key>
   <category>GPU Acceleration</category>
   <import>import cuda</import>
-  <make>cuda.gpu_kernel($device_num, $vlen, $block_dims, $grid_dims)</make>
+  <make>cuda.gpu_kernel($device_num, $vlen, $data_size, $block_dims, $grid_dims)</make>
 
   <param>
     <name>GPU Device #</name>
@@ -15,6 +15,12 @@
   <param>
     <name>Vector Length</name>
     <key>vlen</key>
+    <value>0</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Expected Data Size</name>
+    <key>data_size</key>
     <value>0</value>
     <type>int</type>
   </param>
@@ -32,6 +38,7 @@
   </param>
 
   <check>$vlen &gt; 0</check>
+  <check>$data_size &gt; 0</check>
 
   <sink>
     <name>in</name>

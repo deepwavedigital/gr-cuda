@@ -3,7 +3,7 @@
 ##################################################
 # GNU Radio Python Flow Graph
 # Title: Top Block
-# Generated: Mon Jul 24 09:56:22 2017
+# Generated: Mon Jul 24 14:00:31 2017
 ##################################################
 
 from gnuradio import analog
@@ -24,7 +24,7 @@ class top_block(gr.top_block):
         ##################################################
         # Blocks
         ##################################################
-        self.cuda_gpu_kernel_0 = cuda.gpu_kernel(0, 1024, "Auto", "Auto")
+        self.cuda_gpu_kernel_0 = cuda.gpu_kernel(0, 1024, 4096, "Auto", "Auto")
         self.blocks_throttle_0 = blocks.throttle(gr.sizeof_float*1, 1e6,True)
         self.blocks_stream_to_vector_0 = blocks.stream_to_vector(gr.sizeof_float*1, 1024)
         self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_float*1024, "/home/pete/workspace/dwd/gr-cuda/test/data.dat", False)

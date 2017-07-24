@@ -55,10 +55,11 @@ class gpu_kernel(gr.sync_block):
     Args:
       device_num: CUDA device number (0 if only one GPU installed). You can verify the device number by running the CUDA utility "deviceQuery".
       vlen: Length of the input vector. Allows input and output data to be grouped into a MxN (i.e., M vectors of N samples each) array for easier processing. For CUDA applications, it is preferred that the vlen match the maximum number of threads per block for the GPU in order to simplify block and grid size computation.
+      data_size: The number of bytes of data we expect for each call of the work() function. Used to initially allocate device memory. If more memory is required, the work() function will do a reallocation before proceeding.
       block_dims: CUDA block dimensions passed in as a string. Generally follows the convention "{X, Y, Z}", but "Auto" can also be passed in, which will set the block size based on the size of the input data.
       grid_dims: same a block_dims, except for grid dimensions.
   """
-  def __init__(self, device_num, vlen, block_dims, grid_dims):
+  def __init__(self, device_num, vlen, data_size, block_dims, grid_dims):
     gr.sync_block.__init__(self,
       name="gpu_kernel",
       in_sig=[(numpy.float32, vlen)],
@@ -90,11 +91,29 @@ class gpu_kernel(gr.sync_block):
     self.kernel = module.get_function("divide_by_two")
     self.block_dims = gpu_dims(block_dims)
     self.grid_dims = gpu_dims(grid_dims)
+    self.gpu_memory_size = data_size
+    self.gpu_input = pycuda.driver.mem_alloc(self.gpu_memory_size)
+    self.gpu_output = pycuda.driver.mem_alloc(self.gpu_memory_size)
     self.context.pop()
+
+  def realloc(self, num_bytes):
+    del self.gpu_input
+    del self.gpu_output
+    self.gpu_memory_size = num_bytes
+    self.gpu_input = pycuda.driver.mem_alloc(self.gpu_memory_size)
+    self.gpu_output = pycuda.driver.mem_alloc(self.gpu_memory_size)
 
   def work(self, input_items, output_items):
     in0 = input_items[0]
     out = output_items[0]
+    self.context.push()
+    if (in0.nbytes > self.gpu_memory_size):
+      print "Warning: Not Enough GPU Memory Allocated. Reallocating..."
+      print "-> Received %d Vectors, Each with %d Samples." \
+        % (in0.shape[0], in0.shape[1])
+      print "-> Required Space: %d Bytes" % in0.nbytes
+      print "-> Allocated Space: %d Bytes" % self.gpu_memory_size
+      self.realloc(in0.nbytes)
     if (self.block_dims.auto):
       self.block_dims.x = in0.shape[1]
     if (self.grid_dims.auto):
@@ -102,12 +121,13 @@ class gpu_kernel(gr.sync_block):
       # so many threads per block. As a result, it is "safer" to launch a bunch
       # of blocks...
       self.grid_dims.x = in0.shape[0]
-    self.context.push()
+    pycuda.driver.memcpy_htod(self.gpu_input, in0)
     self.kernel(
-      pycuda.driver.In(in0),
-      pycuda.driver.Out(out),
+      self.gpu_input,
+      self.gpu_output,
       block=(self.block_dims.x, self.block_dims.y, self.block_dims.z),
       grid=(self.grid_dims.x, self.grid_dims.y, self.grid_dims.z))
+    pycuda.driver.memcpy_dtoh(out, self.gpu_output)
     self.context.pop()
     return self.grid_dims.x
 

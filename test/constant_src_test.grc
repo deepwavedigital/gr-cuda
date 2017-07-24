@@ -308,12 +308,16 @@
       <value>True</value>
     </param>
     <param>
+      <key>data_size</key>
+      <value>4096</value>
+    </param>
+    <param>
       <key>device_num</key>
       <value>0</value>
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(624, 95)</value>
+      <value>(624, 88)</value>
     </param>
     <param>
       <key>_rotation</key>
