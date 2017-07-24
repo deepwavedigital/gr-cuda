@@ -30,3 +30,7 @@ GNU Radio by using the PyCUDA library to run CUDA code from within GNU Radio.
   -> make
   -> sudo make install
 
+# Uninstall Block from GNU Radio Companion
+1. cd gr-cuda/build
+2. sudo make uninstall
+

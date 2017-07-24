@@ -18,3 +18,7 @@ support@deepwavedigital.com.
   -> cmake ../
   -> make
   -> sudo make install
+
+# Uninstall Block from GNU Radio Companion
+1. cd gr-cuda/build
+2. sudo make uninstall
