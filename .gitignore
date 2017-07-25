@@ -1,2 +1,3 @@
 build/
 test/*.dat
+test/*.py
