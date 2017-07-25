@@ -54,16 +54,17 @@ class gpu_kernel(gr.sync_block):
 
     Args:
       device_num: CUDA device number (0 if only one GPU installed). You can verify the device number by running the CUDA utility "deviceQuery".
+      io_type: Data type to perform processing on. Since the kernel takes in floats, this value can either be "Float" for 32-bit floating point samples or "Complex", which are two 32-bit floating point samples back-to-back (one representing the real component and the other representing the imaginary component).
       vlen: Length of the input vector. Allows input and output data to be grouped into a MxN (i.e., M vectors of N samples each) array for easier processing. For CUDA applications, it is preferred that the vlen match the maximum number of threads per block for the GPU in order to simplify block and grid size computation.
       data_size: The number of bytes of data we expect for each call of the work() function. Used to initially allocate device memory. If more memory is required, the work() function will do a reallocation before proceeding.
       block_dims: CUDA block dimensions passed in as a string. Generally follows the convention "{X, Y, Z}", but "Auto" can also be passed in, which will set the block size based on the size of the input data.
       grid_dims: same a block_dims, except for grid dimensions.
   """
-  def __init__(self, device_num, vlen, data_size, block_dims, grid_dims):
+  def __init__(self, device_num, io_type, vlen, data_size, block_dims, grid_dims):
     gr.sync_block.__init__(self,
       name="gpu_kernel",
-      in_sig=[(numpy.float32, vlen)],
-      out_sig=[(numpy.float32, vlen)])
+      in_sig=[(io_type, vlen)],
+      out_sig=[(io_type, vlen)])
     # Initialize PyCUDA stuff...
     pycuda.driver.init()
     self.device = pycuda.driver.Device(device_num)
@@ -116,6 +117,10 @@ class gpu_kernel(gr.sync_block):
       self.realloc(in0.nbytes)
     if (self.block_dims.auto):
       self.block_dims.x = in0.shape[1]
+      # If we are doing complex data, we need to account for the fact that we
+      # now have two floats for every single data point
+      if (in0.dtype == numpy.complex64):
+        self.block_dims.x = self.block_dims.x * 2
     if (self.grid_dims.auto):
       # Note, we do not use the block dimensions here since we can only launch
       # so many threads per block. As a result, it is "safer" to launch a bunch

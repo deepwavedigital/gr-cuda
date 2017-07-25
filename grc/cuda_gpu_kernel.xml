@@ -4,13 +4,29 @@
   <key>cuda_gpu_kernel</key>
   <category>GPU Acceleration</category>
   <import>import cuda</import>
-  <make>cuda.gpu_kernel($device_num, $vlen, $data_size, $block_dims, $grid_dims)</make>
+  <import>import numpy</import>
+  <make>cuda.gpu_kernel($device_num, $io_type.dtype, $vlen, $data_size, $block_dims, $grid_dims)</make>
 
   <param>
     <name>GPU Device #</name>
     <key>device_num</key>
     <value>0</value>
     <type>int</type>
+  </param>
+  <param>
+    <name>IO Type</name>
+    <key>io_type</key>
+    <type>enum</type>
+    <option>
+      <name>Complex</name>
+      <key>complex</key>
+      <opt>dtype:numpy.complex64</opt>
+    </option>
+    <option>
+      <name>Float</name>
+      <key>float</key>
+      <opt>dtype:numpy.float32</opt>
+    </option>
   </param>
   <param>
     <name>Vector Length</name>
@@ -42,13 +58,13 @@
 
   <sink>
     <name>in</name>
-    <type>float</type>
+    <type>$io_type</type>
     <vlen>$vlen</vlen>
   </sink>
 
   <source>
     <name>out</name>
-    <type>float</type>
+    <type>$io_type</type>
     <vlen>$vlen</vlen>
   </source>
 </block>
