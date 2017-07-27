@@ -47,7 +47,7 @@ class gpu_dims():
       self.y = int(xyz_list[1])
       self.z = int(xyz_list[2])
       if ((self.x < 1) or (self.y < 1) or (self.z < 1)):
-        raise ValueError("GPU Dimensions Must be Greater than One!")
+        raise ValueError("GPU Dimensions Must be Greater than Zero!")
 
 class gpu_kernel(gr.sync_block):
   """Block that executes a CUDA kernel found within its Python source code. Built from a Sync Block since the kernel in this case has a 1:1 relationship between input and output.  All CUDA resources (i.e., device context, compiled kernel code, pointers to device memory, etc.) are managed within this block.
@@ -69,7 +69,7 @@ class gpu_kernel(gr.sync_block):
     pycuda.driver.init()
     self.device = pycuda.driver.Device(device_num)
     self.context = self.device.make_context()
-    # Build the kernel here.  Alternatively, we could have complied the kernel
+    # Build the kernel here.  Alternatively, we could have compiled the kernel
     # beforehand with nvcc, and simply passed in a path to the executable code.
     compiled_cuda = pycuda.compiler.compile("""
       // Simple kernel that takes every input and divides by two
@@ -92,17 +92,18 @@ class gpu_kernel(gr.sync_block):
     self.kernel = module.get_function("divide_by_two")
     self.block_dims = gpu_dims(block_dims)
     self.grid_dims = gpu_dims(grid_dims)
-    self.gpu_memory_size = data_size
-    self.gpu_input = pycuda.driver.mem_alloc(self.gpu_memory_size)
-    self.gpu_output = pycuda.driver.mem_alloc(self.gpu_memory_size)
+    self.gpu_malloc(data_size)
     self.context.pop()
 
-  def realloc(self, num_bytes):
-    del self.gpu_input
-    del self.gpu_output
+  def gpu_malloc(self, num_bytes):
     self.gpu_memory_size = num_bytes
     self.gpu_input = pycuda.driver.mem_alloc(self.gpu_memory_size)
     self.gpu_output = pycuda.driver.mem_alloc(self.gpu_memory_size)
+
+  def gpu_realloc(self, num_bytes):
+    del self.gpu_input
+    del self.gpu_output
+    self.gpu_malloc(num_bytes)
 
   def work(self, input_items, output_items):
     in0 = input_items[0]
@@ -114,7 +115,7 @@ class gpu_kernel(gr.sync_block):
         % (in0.shape[0], in0.shape[1])
       print "-> Required Space: %d Bytes" % in0.nbytes
       print "-> Allocated Space: %d Bytes" % self.gpu_memory_size
-      self.realloc(in0.nbytes)
+      self.gpu_realloc(in0.nbytes)
     if (self.block_dims.auto):
       self.block_dims.x = in0.shape[1]
       # If we are doing complex data, we need to account for the fact that we
@@ -134,5 +135,5 @@ class gpu_kernel(gr.sync_block):
       grid=(self.grid_dims.x, self.grid_dims.y, self.grid_dims.z))
     pycuda.driver.memcpy_dtoh(out, self.gpu_output)
     self.context.pop()
-    return self.grid_dims.x
+    return len(output_items[0])
 
