@@ -49,6 +49,9 @@ class gpu_dims():
       if ((self.x < 1) or (self.y < 1) or (self.z < 1)):
         raise ValueError("GPU Dimensions Must be Greater than Zero!")
 
+  def dims(self):
+    return (self.x, self.y, self.z)
+
 class gpu_kernel(gr.sync_block):
   """Block that executes a CUDA kernel found within its Python source code. Built from a Sync Block since the kernel in this case has a 1:1 relationship between input and output.  All CUDA resources (i.e., device context, compiled kernel code, pointers to device memory, etc.) are managed within this block.
 
@@ -67,8 +70,8 @@ class gpu_kernel(gr.sync_block):
       out_sig=[(io_type, vlen)])
     # Initialize PyCUDA stuff...
     pycuda.driver.init()
-    self.device = pycuda.driver.Device(device_num)
-    self.context = self.device.make_context()
+    device = pycuda.driver.Device(device_num)
+    self.context = device.make_context()
     # Build the kernel here.  Alternatively, we could have compiled the kernel
     # beforehand with nvcc, and simply passed in a path to the executable code.
     compiled_cuda = pycuda.compiler.compile("""
@@ -89,7 +92,7 @@ class gpu_kernel(gr.sync_block):
       }
     """)
     module = pycuda.driver.module_from_buffer(compiled_cuda)
-    self.kernel = module.get_function("divide_by_two")
+    self.kernel = module.get_function("divide_by_two").prepare(["P", "P"])
     self.block_dims = gpu_dims(block_dims)
     self.grid_dims = gpu_dims(grid_dims)
     self.gpu_malloc(data_size)
@@ -128,11 +131,11 @@ class gpu_kernel(gr.sync_block):
       # of blocks...
       self.grid_dims.x = in0.shape[0]
     pycuda.driver.memcpy_htod(self.gpu_input, in0)
-    self.kernel(
+    self.kernel.prepared_call(
+      self.grid_dims.dims(),
+      self.block_dims.dims(),
       self.gpu_input,
-      self.gpu_output,
-      block=(self.block_dims.x, self.block_dims.y, self.block_dims.z),
-      grid=(self.grid_dims.x, self.grid_dims.y, self.grid_dims.z))
+      self.gpu_output)
     pycuda.driver.memcpy_dtoh(out, self.gpu_output)
     self.context.pop()
     return len(output_items[0])
