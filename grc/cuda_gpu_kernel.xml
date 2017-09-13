@@ -5,7 +5,7 @@
   <category>GPU Acceleration</category>
   <import>import cuda</import>
   <import>import numpy</import>
-  <make>cuda.gpu_kernel($device_num, $io_type.dtype, $vlen, $data_size, $block_dims, $grid_dims)</make>
+  <make>cuda.gpu_kernel($device_num, $io_type.dtype, $vlen, $threads_per_block)</make>
 
   <param>
     <name>GPU Device #</name>
@@ -35,26 +35,14 @@
     <type>int</type>
   </param>
   <param>
-    <name>Expected Data Size</name>
-    <key>data_size</key>
-    <value>0</value>
+    <name>Threads per Block</name>
+    <key>threads_per_block</key>
+    <value>128</value>
     <type>int</type>
-  </param>
-  <param>
-    <name>Block Dimensions</name>
-    <key>block_dims</key>
-    <value>Auto</value>
-    <type>string</type>
-  </param>
-  <param>
-    <name>Grid Dimensions</name>
-    <key>grid_dims</key>
-    <value>Auto</value>
-    <type>string</type>
   </param>
 
   <check>$vlen &gt; 0</check>
-  <check>$data_size &gt; 0</check>
+  <check>$threads_per_block &gt; 0</check>
 
   <sink>
     <name>in</name>

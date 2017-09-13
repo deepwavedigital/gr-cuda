@@ -25,46 +25,16 @@ import numpy
 import pycuda.compiler
 import pycuda.driver
 
-# Helper class to take strings of the format {X, Y, Z} and convert them to
-# X, Y, and Z variables. This allows us to simply pass in a string from GRC
-# instead of multiple ints for block and grid dimensions. Note that there is a
-# special case of "Auto" for the input string, which signals to automatically
-# scale these dimensions based on the size of the input data.
-class gpu_dims():
-  def __init__(self, dimensions):
-    if ("auto" in (dimensions.lower())):
-      self.auto = True
-      self.x = 1
-      self.y = 1
-      self.z = 1
-    else:
-      self.auto = False
-      # Remove the "{" and "}"
-      xyz_str = dimensions[(dimensions.find("{") + 1) : (dimensions.find("}"))]
-      # Next, split on the comma and space
-      xyz_list = xyz_str.split(", ")
-      # Finally, assign the member variables, and check for validity
-      self.x = int(xyz_list[0])
-      self.y = int(xyz_list[1])
-      self.z = int(xyz_list[2])
-      if ((self.x < 1) or (self.y < 1) or (self.z < 1)):
-        raise ValueError("GPU Dimensions Must be Greater than Zero!")
-
-  def dims(self):
-    return (self.x, self.y, self.z)
-
 class gpu_kernel(gr.sync_block):
   """Block that executes a CUDA kernel found within its Python source code. Built from a Sync Block since the kernel in this case has a 1:1 relationship between input and output.  All CUDA resources (i.e., device context, compiled kernel code, pointers to device memory, etc.) are managed within this block.
 
     Args:
       device_num: CUDA device number (0 if only one GPU installed). You can verify the device number by running the CUDA utility "deviceQuery".
       io_type: Data type to perform processing on. Since the kernel takes in floats, this value can either be "Float" for 32-bit floating point samples or "Complex", which are two 32-bit floating point samples back-to-back (one representing the real component and the other representing the imaginary component).
-      vlen: Length of the input vector. Allows input and output data to be grouped into a MxN (i.e., M vectors of N samples each) array for easier processing. For CUDA applications, it is preferred that the vlen match the maximum number of threads per block for the GPU in order to simplify block and grid size computation.
-      data_size: The number of bytes of data we expect for each call of the work() function. Used to initially allocate GPU memory. If more memory is required, the work() function will do a reallocation before proceeding.
-      block_dims: CUDA block dimensions passed in as a string. Generally follows the convention "{X, Y, Z}", but "Auto" can also be passed in, which will set the block size based on the size of the input data.
-      grid_dims: same a block_dims, except for grid dimensions.
+      vlen: Length of the input vector. In the case of our CUDA kernel, this is how many samples we process for every kernel invocation.
+      threads_per_block: # of threads per CUDA block. Defaults to 128, since (in theory) this value should be optimal for the Jetson TX2. Note that our kernel only operates in one dimension and that grid dimensions are automatically computed based on this value.
   """
-  def __init__(self, device_num, io_type, vlen, data_size, block_dims, grid_dims):
+  def __init__(self, device_num, io_type, vlen, threads_per_block):
     gr.sync_block.__init__(self,
       name="gpu_kernel",
       in_sig=[(io_type, vlen)],
@@ -79,90 +49,76 @@ class gpu_kernel(gr.sync_block):
     # beforehand with nvcc, and simply passed in a path to the executable code.
     compiled_cuda = pycuda.compiler.compile("""
       // Simple kernel that takes every input and divides by two
-      __global__ void divide_by_two(float* const in, float* const out) {
-        // Find the part of the array we are processing, assuming a 3D grid of
-        // 3D blocks, which is most certainly overkill for what we are doing.
-        // That said, this represents a general case where both block dimensions
-        // and grid dimensions are each specified in 3D.
-        const int blockId =
-          blockIdx.x + (blockIdx.y * gridDim.x)
-          + (gridDim.x * gridDim.y * blockIdx.z);
-        const int threadId =
-          (blockId * (blockDim.x * blockDim.y * blockDim.z))
-          + (threadIdx.z * (blockDim.x * blockDim.y))
-          + (threadIdx.y * blockDim.x) + threadIdx.x;
-        out[threadId] = in[threadId] / 2;
+      __global__ void divide_by_two(const float* const in,
+                                    float* const out,
+                                    const size_t num_floats) {
+        const int i = threadIdx.x + (blockIdx.x * blockDim.x);
+        if (i < num_floats) {
+          out[i] = in[i] / 2.0;
+        }
       }
     """)
     module = pycuda.driver.module_from_buffer(compiled_cuda)
-    self.kernel = module.get_function("divide_by_two").prepare(["P", "P"])
-    self.block_dims = gpu_dims(block_dims)
-    self.grid_dims = gpu_dims(grid_dims)
+    self.kernel = module.get_function("divide_by_two").prepare(["P", "P", "q"])
+    self.threads_per_block = threads_per_block
     # Allocate device mapped pinned memory
     self.sample_type = io_type
     self.sample_size = numpy.dtype(self.sample_type).itemsize
-    expected_vectors = data_size / (vlen * self.sample_size)
-    expected_shape = (expected_vectors, vlen)
-    self.mapped_host_malloc(expected_shape)
+    self.mapped_host_malloc(vlen)
     self.context.pop()
 
-  def mapped_host_malloc(self, shape):
-    self.gpu_memory_size = shape[0] * shape[1] * self.sample_size
+  def mapped_host_malloc(self, num_samples):
     self.mapped_host_input = \
       pycuda.driver.pagelocked_zeros(
-        shape,
+        num_samples,
         self.sample_type,
         mem_flags = pycuda.driver.host_alloc_flags.DEVICEMAP)
     self.mapped_host_output = \
       pycuda.driver.pagelocked_zeros(
-        shape,
+        num_samples,
         self.sample_type,
         mem_flags = pycuda.driver.host_alloc_flags.DEVICEMAP)
     self.mapped_gpu_input = self.mapped_host_input.base.get_device_pointer()
     self.mapped_gpu_output = self.mapped_host_output.base.get_device_pointer()
+    self.num_samples = num_samples;
+    self.num_floats = self.num_samples;
+    if (self.sample_type == numpy.complex64):
+      # If we're processing complex data, we have two floats for every sample...
+      self.num_floats *= 2
+    self.num_blocks = self.num_floats / self.threads_per_block
+    left_over_samples = self.num_floats % self.threads_per_block
+    if (left_over_samples != 0):
+      # If vector length is not an even multiple of the number of threads in a
+      # block, we need to add another block to process the "leftover" samples.
+      self.num_blocks += 1
 
-  def mapped_host_realloc(self, shape):
+  def mapped_host_realloc(self, num_samples):
     del self.mapped_host_input
     del self.mapped_host_output
-    self.mapped_host_malloc(shape)
+    self.mapped_host_malloc(num_samples)
 
   def work(self, input_items, output_items):
     in0 = input_items[0]
     out = output_items[0]
     self.context.push()
-    if (in0.nbytes > self.gpu_memory_size):
+    recv_samples = in0.shape[1]
+    if (recv_samples > self.num_samples):
       print "Warning: Not Enough GPU Memory Allocated. Reallocating..."
-      print "-> Received %d Vectors, Each with %d Samples." \
-        % (in0.shape[0], in0.shape[1])
-      print "-> Required Space: %d Bytes" % in0.nbytes
-      print "-> Allocated Space: %d Bytes" % self.gpu_memory_size
-      self.mapped_host_realloc(in0.shape)
-    elif ((self.mapped_host_input.shape[0] < in0.shape[0]) or \
-          (self.mapped_host_input.shape[1] < in0.shape[1])):
-      print "Warning: Host Array Shaped Incorrectly. Reshaping..."
-      print "-> GNU Radio Array Shape: " + str(in0.shape)
-      print "-> Host Array Shape: " + str(self.mapped_host_input.shape)
-      self.mapped_host_realloc(in0.shape)
-    if (self.block_dims.auto):
-      self.block_dims.x = in0.shape[1]
-      # If we are doing complex data, we need to account for the fact that we
-      # now have two floats for every single data point
-      if (self.sample_type == numpy.complex64):
-        self.block_dims.x = self.block_dims.x * 2
-    if (self.grid_dims.auto):
-      # Note, we do not use the block dimensions here since we can only launch
-      # so many threads per block. As a result, it is "safer" to launch a bunch
-      # of blocks...
-      self.grid_dims.x = in0.shape[0]
-    max_x_index = in0.shape[0]
-    max_y_index = in0.shape[1]
-    self.mapped_host_input[0:max_x_index , 0:max_y_index] = \
-      in0[0:max_x_index, 0:max_y_index]
-    self.kernel.prepared_call(self.grid_dims.dims(), self.block_dims.dims(), \
-                              self.mapped_gpu_input, self.mapped_gpu_output)
-    self.context.synchronize()
-    out[0:max_x_index, 0:max_y_index] = \
-      self.mapped_host_output[0:max_x_index , 0:max_y_index]
+      print "-> Required Space: %d Samples" % recv_samples
+      print "-> Allocated Space: %d Samples" % self.num_samples
+      self.mapped_host_realloc(recv_samples)
+    # Launch a kernel for each vector we received. If the vector is large enough
+    # we should only be receiving one or two vectors for every time the GNU
+    # Radio scheduler calls work().
+    for i in range(0, in0.shape[0]):
+      self.mapped_host_input[0:in0.shape[1]] = in0[i, 0:in0.shape[1]]
+      self.kernel.prepared_call((self.num_blocks, 1, 1),
+                                (self.threads_per_block, 1, 1),
+                                self.mapped_gpu_input,
+                                self.mapped_gpu_output,
+                                self.num_floats)
+      self.context.synchronize()
+      out[i, 0:in0.shape[1]] = self.mapped_host_output[0:in0.shape[1]]
     self.context.pop()
     return len(output_items[0])
 
