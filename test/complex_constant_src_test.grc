@@ -82,6 +82,33 @@
     </param>
   </block>
   <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(192, 13)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>num_samples</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>131072</value>
+    </param>
+  </block>
+  <block>
     <key>analog_const_source_x</key>
     <param>
       <key>alias</key>
@@ -203,7 +230,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(936, 95)</value>
+      <value>(912, 95)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -223,7 +250,7 @@
     </param>
     <param>
       <key>vlen</key>
-      <value>512</value>
+      <value>num_samples</value>
     </param>
   </block>
   <block>
@@ -313,7 +340,7 @@
     </param>
     <param>
       <key>num_items</key>
-      <value>512</value>
+      <value>num_samples</value>
     </param>
     <param>
       <key>vlen</key>
@@ -382,10 +409,6 @@
       <value></value>
     </param>
     <param>
-      <key>block_dims</key>
-      <value>Auto</value>
-    </param>
-    <param>
       <key>comment</key>
       <value></value>
     </param>
@@ -398,24 +421,16 @@
       <value>True</value>
     </param>
     <param>
-      <key>data_size</key>
-      <value>4096</value>
-    </param>
-    <param>
       <key>device_num</key>
       <value>0</value>
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(712, 88)</value>
+      <value>(712, 102)</value>
     </param>
     <param>
       <key>_rotation</key>
       <value>0</value>
-    </param>
-    <param>
-      <key>grid_dims</key>
-      <value>Auto</value>
     </param>
     <param>
       <key>id</key>
@@ -434,8 +449,12 @@
       <value>0</value>
     </param>
     <param>
+      <key>threads_per_block</key>
+      <value>128</value>
+    </param>
+    <param>
       <key>vlen</key>
-      <value>512</value>
+      <value>num_samples</value>
     </param>
   </block>
   <connection>

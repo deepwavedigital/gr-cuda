@@ -82,6 +82,33 @@
     </param>
   </block>
   <block>
+    <key>variable</key>
+    <param>
+      <key>comment</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(184, 13)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>id</key>
+      <value>num_samples</value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>131072</value>
+    </param>
+  </block>
+  <block>
     <key>analog_const_source_x</key>
     <param>
       <key>alias</key>
@@ -105,7 +132,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(32, 116)</value>
+      <value>(8, 108)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -148,7 +175,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(656, 281)</value>
+      <value>(632, 185)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -179,7 +206,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(416, 269)</value>
+      <value>(392, 173)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -234,7 +261,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(456, 116)</value>
+      <value>(400, 108)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -258,7 +285,7 @@
     </param>
     <param>
       <key>num_items</key>
-      <value>128</value>
+      <value>num_samples</value>
     </param>
     <param>
       <key>vlen</key>
@@ -285,7 +312,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(232, 116)</value>
+      <value>(184, 108)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -340,7 +367,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(872, 116)</value>
+      <value>(800, 108)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -356,7 +383,7 @@
     </param>
     <param>
       <key>vlen</key>
-      <value>128</value>
+      <value>num_samples</value>
     </param>
   </block>
   <block>
@@ -364,10 +391,6 @@
     <param>
       <key>alias</key>
       <value></value>
-    </param>
-    <param>
-      <key>block_dims</key>
-      <value>Auto</value>
     </param>
     <param>
       <key>comment</key>
@@ -382,24 +405,16 @@
       <value>True</value>
     </param>
     <param>
-      <key>data_size</key>
-      <value>32768</value>
-    </param>
-    <param>
       <key>device_num</key>
       <value>0</value>
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(640, 88)</value>
+      <value>(592, 94)</value>
     </param>
     <param>
       <key>_rotation</key>
       <value>0</value>
-    </param>
-    <param>
-      <key>grid_dims</key>
-      <value>Auto</value>
     </param>
     <param>
       <key>id</key>
@@ -418,8 +433,12 @@
       <value>0</value>
     </param>
     <param>
-      <key>vlen</key>
+      <key>threads_per_block</key>
       <value>128</value>
+    </param>
+    <param>
+      <key>vlen</key>
+      <value>num_samples</value>
     </param>
   </block>
   <connection>
