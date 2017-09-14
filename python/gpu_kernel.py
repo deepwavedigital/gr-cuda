@@ -52,9 +52,10 @@ class gpu_kernel(gr.sync_block):
       __global__ void divide_by_two(const float* const in,
                                     float* const out,
                                     const size_t num_floats) {
+        static const float kDivideByMe = 2.0;
         const int i = threadIdx.x + (blockIdx.x * blockDim.x);
         if (i < num_floats) {
-          out[i] = in[i] / 2.0;
+          out[i] = in[i] / kDivideByMe;
         }
       }
     """)
