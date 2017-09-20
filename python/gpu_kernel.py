@@ -37,15 +37,15 @@ class gpu_kernel(gr.sync_block):
   def __init__(self, device_num, io_type, vlen, threads_per_block):
     gr.sync_block.__init__(self,
       name="gpu_kernel",
-      in_sig=[(io_type, vlen)],
-      out_sig=[(io_type, vlen)])
+      in_sig = [(io_type, vlen)],
+      out_sig = [(io_type, vlen)])
     # Initialize PyCUDA stuff...
     pycuda.driver.init()
     device = pycuda.driver.Device(device_num)
     context_flags = \
       (pycuda.driver.ctx_flags.SCHED_AUTO | pycuda.driver.ctx_flags.MAP_HOST)
     self.context = device.make_context(context_flags)
-    # Build the kernel here.  Alternatively, we could have compiled the kernel
+    # Build the kernel here. Alternatively, we could have compiled the kernel
     # beforehand with nvcc, and simply passed in a path to the executable code.
     compiled_cuda = pycuda.compiler.compile("""
       // Simple kernel that takes every input and divides by two
@@ -64,7 +64,6 @@ class gpu_kernel(gr.sync_block):
     self.threads_per_block = threads_per_block
     # Allocate device mapped pinned memory
     self.sample_type = io_type
-    self.sample_size = numpy.dtype(self.sample_type).itemsize
     self.mapped_host_malloc(vlen)
     self.context.pop()
 
@@ -101,25 +100,26 @@ class gpu_kernel(gr.sync_block):
   def work(self, input_items, output_items):
     in0 = input_items[0]
     out = output_items[0]
-    self.context.push()
+    recv_vectors = in0.shape[0]
     recv_samples = in0.shape[1]
+    self.context.push()
     if (recv_samples > self.num_samples):
       print "Warning: Not Enough GPU Memory Allocated. Reallocating..."
       print "-> Required Space: %d Samples" % recv_samples
       print "-> Allocated Space: %d Samples" % self.num_samples
       self.mapped_host_realloc(recv_samples)
     # Launch a kernel for each vector we received. If the vector is large enough
-    # we should only be receiving one or two vectors for every time the GNU
-    # Radio scheduler calls work().
-    for i in range(0, in0.shape[0]):
-      self.mapped_host_input[0:in0.shape[1]] = in0[i, 0:in0.shape[1]]
+    # we should only be receiving one or two vectors each time the GNU Radio
+    # scheduler calls work().
+    for i in range(0, recv_vectors):
+      self.mapped_host_input[0:recv_samples] = in0[i, 0:recv_samples]
       self.kernel.prepared_call((self.num_blocks, 1, 1),
                                 (self.threads_per_block, 1, 1),
                                 self.mapped_gpu_input,
                                 self.mapped_gpu_output,
                                 self.num_floats)
       self.context.synchronize()
-      out[i, 0:in0.shape[1]] = self.mapped_host_output[0:in0.shape[1]]
+      out[i, 0:recv_samples] = self.mapped_host_output[0:recv_samples]
     self.context.pop()
-    return len(output_items[0])
+    return recv_vectors
 
