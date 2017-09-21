@@ -36,7 +36,7 @@ class gpu_kernel(gr.sync_block):
   """
   def __init__(self, device_num, io_type, vlen, threads_per_block):
     gr.sync_block.__init__(self,
-      name="gpu_kernel",
+      name = "gpu_kernel",
       in_sig = [(io_type, vlen)],
       out_sig = [(io_type, vlen)])
     # Initialize PyCUDA stuff...
@@ -101,7 +101,7 @@ class gpu_kernel(gr.sync_block):
     in0 = input_items[0]
     out = output_items[0]
     recv_vectors = in0.shape[0]
-    recv_samples = in0.shape[1]
+    recv_samples = in0.shape[1]  # of samples per vector, NOT total samples
     self.context.push()
     if (recv_samples > self.num_samples):
       print "Warning: Not Enough GPU Memory Allocated. Reallocating..."
