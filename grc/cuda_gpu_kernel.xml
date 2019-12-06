@@ -2,7 +2,7 @@
 <block>
   <name>CUDA Kernel</name>
   <key>cuda_gpu_kernel</key>
-  <category>GPU Acceleration</category>
+  <category>[GPU Acceleration]</category>
   <import>import cuda</import>
   <import>import numpy</import>
   <make>cuda.gpu_kernel($device_num, $io_type.dtype, $vlen, $threads_per_block)</make>
