@@ -826,7 +826,7 @@
     </param>
     <param>
       <key>dev</key>
-      <value>"device=SoapyAIRT"</value>
+      <value>"driver=SoapyAIRT"</value>
     </param>
     <param>
       <key>_enabled</key>
