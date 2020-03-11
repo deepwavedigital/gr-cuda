@@ -19,6 +19,12 @@ This software is written by **Deepwave Digital, Inc.** [www.deepwavedigital.com]
 ## Description
 This OOT module contains experimental code on integration of GPU processing into
 GNU Radio by using the PyCUDA library to run CUDA code from within GNU Radio.
+For a detailed tutorial on using this module see this tutorial:
+[http://docs.deepwavedigital.com/Tutorials/4_gr-cuda.html](http://docs.deepwavedigital.com/Tutorials/4_gr-cuda.html).
+
+<p align="center">
+<img src="https://deepwavedigital.com/wp-content/uploads/2019/09/gr-cuda-edited.gif" Width="70%" />
+</p>
 
 ## Current Blocks
 **gpu_kernel.py** - This is a Python block that runs an arbitrary CUDA kernel
