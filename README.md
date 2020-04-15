@@ -3,7 +3,7 @@ Incorporate GPU Programming into GNU Radio
 
 ### Author
 <p align="center">
-<img src="http://www.deepwavedigital.net/logos/deepwave-logo-2-white.png" Width="50%" />
+<img src="https://deepwavedigital.com/media/images/dwd2_crop_transparent.png" Width="50%" />
 </p>
 
 This software is written by **Deepwave Digital, Inc.** [www.deepwavedigital.com]().
