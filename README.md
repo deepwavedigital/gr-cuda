@@ -8,12 +8,6 @@ Incorporate GPU Programming into GNU Radio
 
 This software is written by **Deepwave Digital, Inc.** [www.deepwavedigital.com]().
 
-
-&nbsp;
-### Inquiries
-  - General company contact: [info@deepwavedigital.com](mailto:info@deepwavedigital.com)
-  - Bugs/issues/requests contact: [support@deepwavedigital.com](mailto:support@deepwavedigital.com)
-
 &nbsp;
 ***
 ## Description
